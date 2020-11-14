@@ -1,0 +1,33 @@
+version: '3'
+services:
+  zookeeper:
+    container_name: zookeeper
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+  kafka:
+    container_name: kafka
+    image: wurstmeister/kafka
+    ports:
+      - "${KAFKA_EXTERNAL_PORT}:${KAFKA_INTERNAL_PORT}"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "${KAFKA_TOPIC}:1:1"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://${KAFKA_INTERNAL_LOCATION}:${KAFKA_INTERNAL_PORT},EXTERNAL://${KAFKA_EXTERNAL_LOCATION}:${KAFKA_EXTERNAL_PORT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LOG_DIRS: kafka-logs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka-vol:/kafka-logs/${KAFKA_TOPIC}-0
+  demo:
+    container_name: demo
+    image: demo:1.0-SNAPSHOT
+    ports:
+      - 8080:8080
+    environment:
+      KAFKA_TOPIC: ${KAFKA_TOPIC}
+      KAFKA_LOCATION: ${KAFKA_INTERNAL_LOCATION}
+      KAFKA_PORT: ${KAFKA_INTERNAL_PORT}
+volumes:
+  kafka-vol:
